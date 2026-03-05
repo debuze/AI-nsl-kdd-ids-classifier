@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# Data (do not commit Kaggle data)
+data/raw/
+data/processed/
+
+# Models / artifacts
+models/
+reports/figures/*.png
+reports/*.json
+
+# Jupyter
+.ipynb_checkpoints/
