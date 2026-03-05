@@ -10,6 +10,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report, average_precision_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.svm import LinearSVC
+from sklearn.calibration import CalibratedClassifierCV
 
 from .data import locate_train_test, load_nslkdd, to_binary
 from .features import build_pre_lr, build_pre_rf
@@ -87,6 +89,34 @@ def main():
     rf_pipe.fit(X_train, y_train)
 
     rf_val_pred = rf_pipe.predict(X_val)
+
+        # --- SVM (Linear) ---
+    # LinearSVC is fast and works well with sparse one-hot features.
+    # Wrap with calibration to get probabilities for PR-AUC.
+    svm = LinearSVC(
+        class_weight="balanced",
+        random_state=42
+    )
+
+    svm_pipe = Pipeline([("pre", build_pre_lr(X_train)), ("clf", svm)])
+    svm_pipe.fit(X_train, y_train)
+
+    svm_val_pred = svm_pipe.predict(X_val)
+    _write_metrics(
+        REPORTS_DIR / "metrics_val_svm.json",
+        y_val, svm_val_pred,
+        scores=None,
+        extra={"model":"LinearSVM", "split":"val"}
+    )
+
+    svm_test_pred = svm_pipe.predict(X_test)
+    _write_metrics(
+        REPORTS_DIR / "metrics_test_svm.json",
+        y_test, svm_test_pred,
+        scores=None,
+        extra={"model":"LinearSVM", "split":"test"}
+    )
+    joblib.dump(svm_pipe, MODELS_DIR / "svm_model.joblib")
     # RF has predict_proba
     rf_val_scores = rf_pipe.predict_proba(X_val)[:, 1]
     _write_metrics(
